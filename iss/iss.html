@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>ISS</title>
+<style type="text/css">
+body, html {margin:0;padding:0}
+body {padding:1em;}
+
+h1 {border-bottom: 1px solid;}
+ol,ul,li {margin: 0;}
+
+section {border: 1px solid; margin: 1em; padding: 1em;}
+section h1:first-child,section h2:first-child,section h3:first-child,section h4:first-child,section h5:first-child,section h6:first-child {margin-top: 0;}
+
+h1,h2,h3,h4,h5,h6 { margin-bottom: 0}
+
+code {
+background: rgba(0,0,0,0.25);
+color: rgba(255,255,255,0.75);
+display: block;
+padding: 1em;
+white-space: wrap;
+margin: 1em;
+}
+code::first-line:empty{
+	display: none;
+}</style>
+</head>
+<body style="white-space: pre-wrap">
+<h1>Improper Styling System</h1>
+<p>The Improper Styling System ( <acronym title="Improper Styling System">ISS</acronym> ) is an extension of Cascading Style Sheets ( <acronym title="Cascading Style Sheets">CSS</acronym> ) with the aim of making styling something that is not tedious and repetitive for tasks that should take only a minor change, where CSS requires a large amount of effort. If you wish to make it sound nicer than what the CSS jockeys call it (name is from a CSS irc chat) you can call ISS the Integrated Style Sheets specification.</p>
+<section>
+<h3>Why is it "improper"</h3>
+<ul>
+	<li>It can relate various declarations as the designer specifies!</li>
+	<li>It can integrate with javascript well!</li>
+	<li>It is not supported by the W3!</li>
+	<li>It believes in practicality over purity!</li>
+	<li>It is a javascript based solution!</li>
+</ul>
+</section>
+<section>
+<h3>Pro</h3>
+<p>As with any technology there should be an advantage to using it if it wants support. Here is a small list of some positives gained through ISS</p>
+<ul>
+	<li>Variables - A god send for theming and reusability through templates.</li>
+	<li>Relative styling - set values of properties according to values that relate to other elements on the page.</li>
+	<li>Usability fixes - branching selectors, multiple property setting, @import</li>
+	<li>Javascript Integration - get values and pseudo-elements through javascript.</li>
+	<li>Nested syntax - CSS can be repetitive and looks linear compared to how pages can be set up. Templating no longer has to have tons of repetitive selectors</li>
+	<li>More selectors - get parents, nth siblings, ancestors, check for boolean conditions</li>
+</ul>
+</section>
+<section>
+<h3>Con</h3>
+<p>On the other hand, many technologies that are new or not in wide use may come with some disadvantages. Here are the ones for ISS. If a part of ISS invokes one of these it will be given a link back to these. (these do not always present disadvantages)</p>
+<ol>
+	<li><a name="con1">Does not work with javascript libraries that change CSS values unless that value supports ISS.</li>
+	<li><a name="con2">Lack of browser integrated low level code means that actions can take time if many elements are effected and/or a small load time.</li>
+	<li><a name="con3">@import of ISS is dependant upon cross site scripting rules.</li>
+</ol>
+</section>
+<section>
+<h3>Implementation</h3>
+<p>
+ISS attempts to have minimal impact on sites that already use javascript to override css, however, given the dynamic nature of such, it cannot always do so.
+Unless a section has the Con of <a href="#con1">1</a> it should be able to be implemented in a CSS stylesheet after parsing. These are considered "safe" for injection into normal sites.
+
+If there is a recursive property mapping (relative sizes of 2 divs depending on eachother for example) the first declaration will be the only declaration enforced!
+</p>
+</section>
+<section>
+<h3>Reserved Words</h3>
+<dl>
+<dd>$:this</dd>
+<dd>$:parent</dd>
+<dd>$:window</dd>
+<dd>$:mouse</dd>
+<dd>$:javascript</dd>
+<dd>$:either</dd>
+<dd>@var</dd>
+</dl>
+</section>
+<section>
+<h2>@import anywhere</h2>
+<h4>cons</h4>
+<ul><li><a href="#con3">3</a></li></ul>
+<p>@import has the idea that it should always be at the top of a document. I think not...</p>
+</section>
+<section><h2>Variables</h2>
+<p>Variables in ISS are declared using the @var meta statement. @var takes 2 arguments the first is a <strong>/[a-zA-Z_-][0-9a-zA-Z_-]*/</strong> string and the remainder of the declaration is interpreted as a chunk to be inserted and reevaluated at the point of the variable. In order to use a variable just include a $varname where you wish the code to be inserted.</p>
+<p>If you use the variable as a function with ()'s the argument list may be accessed with <strong>$1-$x</strong> where x is the number of arguments. The $0 refers to the current scope of the injection (generally it is the same as $:this). Recursion is not allowed.</p></section>
+<!--<h2>RelativeTo operator</h2>
+Sometimes you want information to be relayed based upon other elements. That is where the 'relative-to' operator comes into play. relative-to specifies that the value should be interpreted as if it was in the other element. IE.
+<code>
+div #a{
+	bottom: 1em
+}
+div #b{
+	bottom: 0px relative-to bottom of #a
+}
+</code>
+<h3>RelativeTo operands</h3>
+
+takes a property
+'of'
+and a specifier-->
+<section><h2>Objects</h2>
+<h4>cons</h4>
+<ul><li><a href="#con1">1</a></li></ul>
+Sometimes you need information that is specific to elements. Whereas the W3 enjoys the attr() function... it can be rather clumsy. Using an ISS single element path to get your object you can access more. Element paths always start with the ISS operator $().
+<code>
+div #a {
+	top: $:mouse.y
+	left: $:mouse.x
+}
+div#colorDropper {
+	background: $:mouse.elementAt.style.background-color
+}
+</code>
+<h3>special objects</h3>
+$:mouse - refers to a point not the cursor
+$:window - refers to the root element
+$:this - element selected by current selector (non-pseudo)
+$:javascript(address) - can be used to obtain values from javascript (numbers and strings are preserved,images are converted to data urls,functions are evaluated until one of the previous values is obtained)
+<h3>Single element paths</h3>
+The largest part of complexity in having relative values is correctly identifying what element you are referring to. All single element paths must start and end with uniqueness of 1. Things with a uniqueness of 1 are id's, :nth-X, :first-X, :last-X, :before, :after, $:parent, $:this, $:mouse, $:window
+<h3>Supported Properties ()</h3>
+<code>
+elem.offsetHeight/Width/X/Y
+elem.clientHeight/Width/X/Y
+elem.scrollHeight/Width/X/Y
+elem.pageHeight/Width - refers to the view containing the element
+elem.lineHeight
+elem.style.x
+:[element path (using selector syntax)] - grabs the element that follows the selector from the current scope. this is included to prevent the need for functions.
+
+point.elementAt
+point.x
+point.y
+
+color.r
+color.g
+color.b
+color.a
+</code>
+</section><section>
+<h2>Properties as a list</h2>
+Shorthand properties are nice, really nice. Sometimes you want a lot of related properties to have the same value.
+<code>
+div #a{
+	padding-top, padding-left: 2em;
+}
+</code></section><section>
+<h2>$:either(x,y,[z])</h2>
+expand the current selector with branches keeping the stuff before and after this and allow any of the arguments to match the current section.
+
+<code>
+div $:either(#a,#b) {
+	color: red;
+}
+</code></section><section>
+<h2>:$:parent</h2>
+<h4>cons</h4>
+<ul><li><a href="#con1">1</a></li></ul>
+think about this...
+<code>
+div:$:parent#hello-world-container {
+	background: url(hello.jpg)
+}
+</code></section><section>
+<h2>:$:ancestor(selector)</h2>
+<h4>cons</h4>
+<ul><li><a href="#con1">1</a></li></ul>
+think about this...
+<code>
+div.force-border:$:ancestor(.no-borders) {
+	border-style: solid
+}
+</code></section><section>
+<h2>:$:has(selector)</h2>
+<h4>cons</h4>
+<ul><li><a href="#con1">1</a></li><li><a href="#con2">2</a></li></ul>
+think about this...
+<code>
+* has(:$:ancestor(.no-borders)) {
+	border-style: none
+}
+</code></section><section>
+<h2>nested declarations</h2>
+CSS likes to make the style blocks for elements have to be designed in a linear fashion and make you declare common selectors several times over. Lets just avoid that and declare selectors can be nested inside blocks as long as a block follows them instead of a semi-colon (:)
+<code>
+div {
+	color:black;
+	:hover {
+		color:green;
+	}
+}
+</code>
+is the same as
+<code>
+div {
+	color: black;
+}
+div:hover {
+	color: green;
+}
+</code>
+this becomes far more pronounced with the more styling is used.</section>
+</body>
+</html>
