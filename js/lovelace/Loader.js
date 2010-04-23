@@ -40,17 +40,21 @@
 	//$7 fileext
 	//$8 query
 	//$9 hash
-	var uriMatcher=RegExp(""+
-		"(?:"+
-			"(?:([^/]*)"+
-			"(?:\\:([^/]))\\@)?"+
-			"([^\\:]+)\\:(?:[/]*)"+
-		")?"+
-		"([^/\\?\\#]*)?"+
-		"(?:/((?:[^\\?\\#/]*/)*))?"+
-		"(?:([a-zA-Z0-9\\-\\_]+)?(?:\\.([a-zA-Z0-9\\-\\_]+))?)"+
-		"(?:\\?([^\#]*))?"+
-		"(?:\\#(.*))?$")
+	var uriMatcher=RegExp(
+		"^"
+		+"(?:"
+			+"(?:([^/]*)"
+			+"(?:\\:([^/]))\\@)?"
+			+"([^\\:]+)\\:(?:[/]*)"
+		+")?"
+		+"([^/\\?\\#]*)?"
+		+"(?:/((?:[^\\?\\#/]*/)*))?"
+		+"([a-zA-Z0-9\\-\\_]+(?:\\.(?:[a-zA-Z0-9\\-\\_]+))*?)?"
+		+"(?:\\.([a-zA-Z0-9\\-\\_]+))?"
+		+"(?:\\?([^\#]*))?"
+		+"(?:\\#(.*))?"
+		+"$"
+		)
 	function URI(url) {
 		if(url instanceof URI) return url;
 		//if(url instanceof String == false) console.warn("Converting non-string url to string for URI parsing");
@@ -61,6 +65,7 @@
 		//Log.log(1)
 		var match=url.match(uriMatcher)
 		//Log.log(2)
+		//console.error(url,match)
 		if(!match) if(logging) console.log("@Loader: URL:",url,"appears to be invalid.")
 
 		//check, do we have something to work on ?
@@ -99,6 +104,7 @@
 	}
 	function ResolveUri(base,target){
 		base=new URI(base);
+		console.log(base,target)
 		target=new URI(target);
 		//Log.log(target,base)
 		if(target.protocol||target.domain) {
@@ -118,6 +124,7 @@
 					console.warn("Cannot go to ../ of a domain");
 				}
 				else {
+					//console.log("GOING UP")
 					currentPathing.pop();
 				}
 			}
@@ -138,12 +145,12 @@
 		(target.query||"")+
 		(target.hash||"")
 		//Log.log("resolved to",href,"from",base,target)
-		var resolvedUri = new URI(		
+		var resolvedUri = new URI(
 			href
 		)
 		return resolvedUri;
 	}
-	
+
 	//@start event queue
 	var EventQueue = function(){
 	    //Form an event queue (needed due to a slew of delayed action events)
@@ -224,7 +231,7 @@
 	        }
 	        return false;
 	    }
-	
+
 		this.Bump = function(item) {
 			var index = eventQueue.indexOf(item)
 			if(index!=-1) {
@@ -233,7 +240,7 @@
 			}
 		}
 
-	    $().ready(function() {
+	    window.addEventListener("load",function() {
 	        //Log.log("Document Load Event Flush.")
 	        self.Flush();
 	    });
@@ -241,7 +248,7 @@
 	    return this;
 	}
 	//@end event queue
-	
+
     var ScriptQueue = new EventQueue();
 	var CallbackQueue = new EventQueue();
 	var LoadingScripts = {}
@@ -259,12 +266,12 @@
 				Scripts are given to an EventQueue for loading and once loaded
 				are given to another EventQueue to be evaluated in proper order.
 				Recursive scripts work fine.
-				
+
 			Parameters:
 				url - URI relative to the current script's document to load
 				force - allow the script to be reloaded even if we have done so already
 					(does not force a reload if the script is already waiting to be evaluated)
-			
+
 			See:
 				<EventQueue>
 				<URI>
@@ -272,11 +279,21 @@
  	   Require : function(url,force) {
 			if(!CurrentDir) {
 				//Log.log("defaulting currentDir")
-				CurrentDir=new URI(document.location.href)		
+				CurrentDir=new URI(document.location.href)
 			}
 			//Log.log("@Loader: Loading require... ",url,CurrentDir.href)
-			if(url.length<3||url.slice(-2)!=".js") {
-					url=[url,".js"].join("")
+			if(url.length<3) {
+					url+=".js"
+			}
+			url=new URI(url);
+			if(!url.file) { //defaults to all.js
+				ResolveUri(url,"all.js")
+			}
+			else{
+				if(!url.file.extension) {
+					url.href+=".js";
+					url.file.extension="js"
+				}
 			}
 			var uri=ResolveUri(CurrentDir,url);
 			//Log.log("321",uri)
@@ -296,11 +313,11 @@
 			var callbackHold = CallbackQueue.HoldEvents();
 			//Log.log("@Loader: Holding callbacks for ",url,"with",callbackHold)
 	        var hold = ScriptQueue.HoldEvents();
-			
+
 			var evt = {
 				callbackFunction: function(script){
 					if(!script)return;
-					
+
 					CurrentDir=uri;
 					//Log.log("current dir set to",uri)
 					console.log("@Loader: Evaluating ",url)//,"then releasing callbackhold",callbackHold)
@@ -329,7 +346,7 @@
 			//register it as loading
 			LoadingScripts[uri.href]=evt;
 			ScriptQueue.UnshiftEvent(evt);
-			
+
 			var req = new XMLHttpRequest();
 			req.open('GET', uri.href, true);
 	        req.onreadystatechange = function(xhrEvt) {
@@ -346,7 +363,7 @@
 					ScriptQueue.Flush();
 	            }
 	        }
-		
+
 		    req.send();
 	    },
 		/*
@@ -354,7 +371,7 @@
 			When loading scripts that require other scripts it is often the case that those scripts are used in initialization.
 			OnLoaded provides a means to have these scripts register callbacks so that they can initialize things
 			after their requirements are finished loading.
-			
+
 			Parameters:
 				callback - function to call once all the required scripts have been loaded
 		*/
