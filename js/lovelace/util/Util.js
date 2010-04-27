@@ -38,17 +38,17 @@ WrappedBoundingRect = function(elem) {
     wrapper.style.top = "0";
     wrapper.style.width = "";
     wrapper.style.height = "";
-    
+
     range.selectNode(elem);
     range.surroundContents(wrapper);
     var bounds = wrapper.getBoundingClientRect()
-                
+
     range.selectNodeContents(wrapper);
     elem = range.extractContents();
     range.selectNode(wrapper);
     range.insertNode(elem);
     wrapper.parentNode.removeChild(wrapper);
-    
+
     return bounds;
 }
 

@@ -1,0 +1,1 @@
+window.Watchable=function(f){if(this==function(){return this}()){var c=f,a=[],e=false;return{a:function(b){if(e)throw 0;e=true;for(var d=0;d<a.length;d++)a[d](c,b);return c=b},b:function(){return c},watch:function(b){a.push(b)},unwatch:function(b){a=a.splice(a.indexOf(b),1)}}}else throw 0;};

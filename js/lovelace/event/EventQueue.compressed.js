@@ -1,0 +1,2 @@
+window.EventQueue=function(){var b={},e=[],c={};b.flush=function(){for(;e.length>0;){var a;for(a in c)return false;a=e.shift();a.b.apply(a.c||{},a.a)}return true};b.push=function(a){for(var d in c)if(!c[d]())return null;return e.push(a)};b.unshift=function(a){for(var d in c)if(!c[d](a))return null;e.unshift(a);return 0};b.hold=function(a){var d;do d=Math.random();while(c[d]);c[d]=a;return d};b.release=function(a){return delete c[a]};b.bump=function(a){a=e.indexOf(a);a>=0&&b.unshift(e.splice(a,1))};
+return b};

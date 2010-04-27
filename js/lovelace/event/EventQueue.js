@@ -21,10 +21,10 @@
 	| thisObject : $
 	|}
 */
-EventQueue = function(){
+window["EventQueue"] = function(){
     //Form an event queue (needed due to a slew of delayed action events)
     //ie. ajax, saving, undo, copy, paste, etc.
-    var $this = {},eventQueue = [],eventHolds = {}, T = true, F = false, N = null;
+    var $this = {},eventQueue = [],eventHolds = {};
 
 	/*Function: Flush
     	Attempt to perform all the events in the queue from first priority to last priority.
@@ -33,22 +33,20 @@ EventQueue = function(){
 		- *false* if stopped by something.
     	- *true* otherwise.
 	*/
-    $this.Flush = function() {
+    $this["flush"] = function() {
         while (eventQueue.length > 0)
         {
-            for (var hold in eventHolds) {
-                return F;
+        	var event;
+            for (event in eventHolds) {
+                return false;
             }
-            var event = eventQueue.shift();
-            if (event.log) {
-               Log.log(event.log);
-            }
-			if (!event.thisObject) {
-				event.thisObject = {};//Default to avoid global namespace colisions
-			}
-            event.callbackFunction.apply(event.thisObject,event.argumentsArray);
+			event=eventQueue.shift();
+            event.callbackFunction.apply(
+            	event.thisObject||{}
+            	,event.argumentsArray
+            );
         }
-        return T;
+        return true;
     }
 
     /*
@@ -65,10 +63,13 @@ EventQueue = function(){
 			<EventObject>
 			<UnshiftEvent>
 	*/
-    $this.PushEvent = function(evt) {
+    $this["push"] = function(evt) {
 		for (var filter in eventHolds) {
-			if(eventHolds[filter] && !eventHolds[filter]()) return N;
+			if(!eventHolds[filter]()) {
+				return null;
+			}
 		}
+		//use push since the get is costly due to scope chain
         return eventQueue.push(evt)
     }
 
@@ -86,10 +87,10 @@ EventQueue = function(){
 			<EventObject>
 			<PushEvent>
 	*/
-    $this.UnshiftEvent = function(evt) {
+    $this["unshift"] = function(evt) {
 		for (var filter in eventHolds) {
-			if (eventHolds[filter] && !eventHolds[filter](evt)) {
-				return N;
+			if (!eventHolds[filter](evt)) {
+				return null;
 			}
 		}
         eventQueue.unshift(evt);
@@ -111,11 +112,11 @@ EventQueue = function(){
 		See:
 			<ReleaseHold>
 	*/
-    $this.HoldEvents = function(pushFilter) {
+    $this["hold"] = function(pushFilter) {
         var holdId;
-		while (!holdId||eventHolds[holdId]) {
+		do {
 			holdId = Math.random();
-		}
+		} while(eventHolds[holdId]);
         eventHolds[holdId] = pushFilter;
         return holdId;
     }
@@ -133,13 +134,8 @@ EventQueue = function(){
 		See:
 			<HoldEvents>
 	*/
-    $this.ReleaseHold = function(holdId) {
-		//Log.log("releasing ",holdId,eventHolds)
-        if (holdId in eventHolds) {
-            delete eventHolds[holdId];
-            return T;
-        }
-        return F;
+    $this["release"] = function(holdId) {
+        return delete eventHolds[holdId];
     }
 
 	/*
@@ -154,11 +150,10 @@ EventQueue = function(){
 		See:
 			<EventObject>
 	*/
-	$this.Bump = function(evt) {
-		var index = eventQueue.indexOf(evt), newTop;
-		if(index<0) {
-			newTop = eventQueue.splice(evt,1)[0];
-			$this.UnshiftEvent(evt)
+	$this["bump"] = function(evt) {
+		var index = eventQueue.indexOf(evt);
+		if(index >= 0) {
+			$this.unshift(eventQueue.splice(index,1))
 		}
 	}
 

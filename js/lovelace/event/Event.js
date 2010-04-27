@@ -1,17 +1,19 @@
 Loader.module("Event",function(){
-	var F=false,T=true,prevented={},stopped={};
-	BindableEvent=function(evtType,data) {
+	var prevented={},stopped={};
+	EventListenerEvent=function(evtType,data) {
 		//preventMe and stopMe exist outside of the event object to keep
-		var $this=this,preventMe=F,stopMe=F;
+		var $this=this,preventMe=false,stopMe=false;
 		$this.type=evtType;
 		$this.detail=data;
-		$this.preventDefault=function(){prevented[$this]=preventMe=T;};
+		$this.preventDefault=function(){prevented[$this]=preventMe=true;};
 		$this.isPrevented=function(){return preventMe;};
-		$this.stopPropagation=function(){stopped[$this]=stopMe=T;};
+		$this.stopPropagation=function(){stopped[$this]=stopMe=false;};
 		$this.isStopped=function(){return stopMe;};
 	};
-	Bindable=function(defaultActions){
-		var eListeners={},$this=this;
+	EventListener=function($this,defaultActions){
+		var eListeners={};
+		$this=$this||{}
+		defaultActions=defaultActions||{};
 		if(!$this.addEventListener){
 			$this.addEventListener=function(evtType,evtHandler) {
 				if(!eListeners[evtType]) {
@@ -54,4 +56,10 @@ Loader.module("Event",function(){
 		};
 		return $this;
 	};
+	DeferedEventDispatcher=function($this,evt) {
+		return function(){
+			evt.data=arguments;
+			$this.dispatchEvent($this,evt);
+		}
+	}
 })
