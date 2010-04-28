@@ -1,0 +1,22 @@
+<script type="text/javascript" src="../../js/lovelace/Loader.js"></script>
+<script type="text/javascript">
+	Loader.Require("../../js/parser/Parser.js")
+	Loader.OnLoaded(function(){
+		var base=RegexCombination();
+		base!=RegexCombination()?
+			console.log("Passed Uniqueness.")
+			:console.error("Not unique construction!");
+		var cast=RegexCombination(base);
+		base==cast?
+			console.log("Passed Casting - RegexCombination.")
+			:console.error("Cast duplication!");
+		var string=RegexCombination("Foo");
+		string.prototype==RegexCombination.prototype?
+			console.log("Passed Casting - string.")
+			:console.error("Cast failure!");
+		var regex=RegexCombination(/Bar/gmi);
+		regex.prototype==RegexCombination.prototype?
+			console.log("Passed Casting - regexp.")
+			:console.error("Cast failure!");
+	})
+</script>
