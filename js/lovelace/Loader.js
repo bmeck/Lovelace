@@ -239,12 +239,10 @@
 				this.UnshiftEvent(newTop)
 			}
 		}
-
-	    window.addEventListener("load",function() {
-	        //Log.log("Document Load Event Flush.")
-	        self.Flush();
-	    });
-
+//	    window.addEventListener("onload",function() {
+//	        Log.log("Document Load Event Flush.")
+//	        self.Flush();
+//	    });
 	    return this;
 	}
 	//@end event queue
