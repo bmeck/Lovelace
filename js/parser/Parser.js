@@ -225,21 +225,23 @@ _RegexCombination.prototype.optimize = function() {
 
 _RegexCombination.prototype._optimize = function(visited,depth) {
 	visited=visited||[]
-	depth=depth||0
+	/*debug.start*/
+	depth=depth||0;
+	/*debug.end*/
 	var $this=this;
 	visited.push($this);
 	var type=$this.type;
 	//Compress the types
-	if(type=="Concat"||type=="Any") {
+	if(type==="Concat"||type==="Any") {
 		var nodes=$this.nodes;
 		var new_nodes=[];
 		for(var i=0;i<nodes.length;i++) {
 			var node=nodes[i];
 			if(node instanceof _RegexCombination) {
-				if(visited.indexOf(node)==-1) {
+				if(visited.indexOf(node)===-1) {
 					node._optimize(visited,depth+1);
-					if(node.type==type) {
-						new_nodes.push.apply(new_nodes,node.nodes);
+					if(node.type===type) {
+						Array.prototype.push.apply(new_nodes,node.nodes);
 						continue;
 					}
 				}
@@ -252,14 +254,25 @@ _RegexCombination.prototype._optimize = function(visited,depth) {
 	return $this;
 }
 
-//Takes a regex and preserves functionality while making it fit the ignoreCase, and multiLine flags
+//Takes a regex and preserves functionality while making it fit the ignoreCase, and multiLine flags to match RegExp(...,"mg")
 function RegexNormalize(re) {
-	if(re.ignoreCase && re.multiLine) {
+	if(re.normalized) {
+		return re;
+	}
+	var i=re.ignoreCase,m=re.multiLine;
+	if(!i && m) {
 		return re;
 	}
 	else {
-		if(!re.ignoreCase)
+		var source=re.source;
+		if(i) {
+			//take all the normal characters and wrap em in char classes w/ their cased counterparts
+		}
+		if(!m) {
+			//put in our way of tracking the start and end of string vs line
+		}
 	}
+	return re;
 }
 
 function RegexEscape(str) {

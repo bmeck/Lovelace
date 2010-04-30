@@ -55,6 +55,6 @@
 			console.log("Passed Parsing - failing string")
 			:console.error("Parse Failure!");
 
-		console.log(/^^/.source)
+		console.log(/[^^]a/.exec("a\na"),"1")
 	})
 </script>
