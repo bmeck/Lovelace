@@ -1,4 +1,4 @@
-
+(function(){
 //Whew constructor mayhem
 function global() {
 	return this;
@@ -6,9 +6,7 @@ function global() {
 //
 //	Class: RegexCombination
 //	A means for combining regular expressions predictably and between browsers,
-//	the resulting Regex from a .compile() will have case sensitivity (ignore case Regex will be converted appropriately),
-//	the expressions inside of a .compile() will have ^ match a line and ^^ match the start, same for $ and $$
-//	finally, the resulting expression will not have the global flag set
+//  Recursions is supported but not safeguarded, so be careful!
 //
 //  EXPORT : made to keep the singleton method available
 RegexCombination=function(Regex_or_String) {
@@ -23,6 +21,11 @@ RegexCombination=function(Regex_or_String) {
 
 }
 
+
+//
+//  The private constructor for RegexCombination
+//  Separate so that casting works
+//
 var id_next=0
 function _RegexCombination(Regex_or_String){
 	var $this=this;
@@ -44,7 +47,10 @@ function _RegexCombination(Regex_or_String){
 	return $this;
 }
 
-//performs a copy of a RegexCombination
+//  performs a copy of a RegexCombination
+//  Properties:
+//    deep -
+//    cloneRegExp -
 _RegexCombination.prototype.clone = function(deep,cloneRegExp) {
 	var $this=this;
 	var clone=new _RegexCombination();
@@ -60,11 +66,7 @@ _RegexCombination.prototype.clone = function(deep,cloneRegExp) {
 			}
 			else {
 				nodes.push(cloneRegExp?
-					RegExp(node.source
-						,node.global?"g":""
-						+node.multiline?"m":""
-						+node.ignoreCase?"i":""
-					)
+					cloneRegExp()
 					:node
 				);
 			}
@@ -153,7 +155,7 @@ _RegexCombination.prototype.any = function(/*args*/) {
 //	Returns a RegexCombination that wraps the current one
 //  lower < 0 = 0
 //  upper == Number.infitity = unbounded
-//
+//  TODO: Implement in match!
 _RegexCombination.prototype.repetition = function(lower,upper) {
 	var $this=this;
 	$this.nodes=[];
@@ -173,6 +175,10 @@ _RegexCombination.prototype.repetition = function(lower,upper) {
 }
 
 
+//  Function: match
+//  Parameters:
+//    str - the string that should be matched against
+//    depth - used for debugging
 _RegexCombination.prototype.match = function(str,depth) {
 	depth=depth||0;
 	viewing_str=str
@@ -188,12 +194,14 @@ _RegexCombination.prototype.match = function(str,depth) {
 		var match=part instanceof _RegexCombination
 			?part.match(str.substr(index),depth+1)
 			:part.exec(viewing_str);
+		/*debug.start*/
 		if(window.debug) console.log(
 			"String:",viewing_str
 			,"Submatch:",match
 			,"This:",this
 			,"Node:",i,part
 		);
+		/*debug.end*/
 		switch(this.type) {
 			case "Concat":
 				if(match==null) {
@@ -218,11 +226,17 @@ _RegexCombination.prototype.match = function(str,depth) {
 	return this.type=="Concat"?result:null;
 }
 
-//DANGEROUS BUT FASTER (except on very very complex very very large parsers (rather hard to achieve))
+//  DANGEROUS BUT FASTER (except on very very complex very very large parsers (rather hard to achieve))
+//  recursively optimizes in place.
 _RegexCombination.prototype.optimize = function() {
+	//call a helper
 	return this._optimize();
 }
 
+//
+//  The recursive helper function for optimize
+//  depth is  used for debugging right now, but can be used later for depth limiting?
+//
 _RegexCombination.prototype._optimize = function(visited,depth) {
 	visited=visited||[]
 	/*debug.start*/
@@ -239,6 +253,7 @@ _RegexCombination.prototype._optimize = function(visited,depth) {
 			var node=nodes[i];
 			if(node instanceof _RegexCombination) {
 				if(visited.indexOf(node)===-1) {
+					//call the recursive optimize
 					node._optimize(visited,depth+1);
 					if(node.type===type) {
 						Array.prototype.push.apply(new_nodes,node.nodes);
@@ -254,27 +269,77 @@ _RegexCombination.prototype._optimize = function(visited,depth) {
 	return $this;
 }
 
+//Takes the i flag and make it so the pattern is not dependent upon it
+//|1-|3 char escapes
+//|4 char classes
+//$1 char class internals
+//|5 escaped thing
+//|6 normal char
+//$2 charlass $3 chars in class
+var FlaggedChars=/(\\[bBcdDfnrsStvwW0]|\\x[a-fA-F0-9]|\\u[a-fA-F0-9]{4}|\\[^a-zA-Z])|(\[^?)(?:(\\.|[^\]]-\\?[^\\]|\\.|[^\]]))*\]|(\\?[a-zA-Z])/g
+//$1 char at range start
+//$2 char at range end
+//Matches since characters and character ranges!
+var CharRange=/(\\[^ux]|\\u[a-fA-F0-9]{4}|\\x[a-fA-F0--9]{2}|[^\\])(?:-(\\[^ux]|\\u[a-fA-F0-9]{4}|\\x[a-fA-F0--9]{2}|[^\\]))?/g
 //Takes a regex and preserves functionality while making it fit the ignoreCase, and multiLine flags to match RegExp(...,"mg")
-function RegexNormalize(re) {
-	if(re.normalized) {
-		return re;
+function RegexNormalizeIgnoreCase(re) {
+	var patt=re.source;
+	if (!re.ignoreCase) {
+		return patt;
 	}
-	var i=re.ignoreCase,m=re.multiLine;
-	if(!i && m) {
-		return re;
-	}
-	else {
-		var source=re.source;
-		if(i) {
-			//take all the normal characters and wrap em in char classes w/ their cased counterparts
+	patt.replace(flagged,function(match,pre,charClass,charsInClass,character){
+		if(pre) return pre;
+		if(charClass) {
+			return charClass+charsInClass.replace(CharRange,function(match,start,end){
+				//only one char (be sure it has upper and lowercase)
+				if(!end) return start.toUppercase()!=start.toLowercase()?start.toLowercase()+start.toUppercase():start;
+
+				//range... ugg
+				start=UnescapeUnicode(start).charCodeAt(0);
+				end=UnescapeUnicode(end).charCodeAt(0)
+				//does this thing actually contain stuff to case swap?
+				if(end>64&&start<123) {
+					//force the chars to stay in 65-90,97-122
+					//drop it by 32 (lowercase from upper)
+					//originals
+					//up it by 32 (uppercase from lower)
+					return String.fromCharCode(Math.max(start-32,65))+"-"+String.fromCharCode(Math.max(end-32,65))+
+						String.fromCharCode(start)+"-"+String.fromCharCode(end)+
+						String.fromCharCode(Math.min(start+32,97))+"-"+String.fromCharCode(Math.min(end+32,97));
+				}
+			})
 		}
-		if(!m) {
-			//put in our way of tracking the start and end of string vs line
+		else {
+			return "["+character.toLowercase()+character.toUppercase()+"]";
 		}
-	}
-	return re;
+	})
+	return patt;
 }
 
+//$1.start
+//|1 guarantee odd number of '\'s
+//|2 skip character classes
+//$1.end
+//$2.start
+//|3 offset
+//$2.end
+//Takes a backreferenced regexp and shifts all the backreferences up by an offset
+var BackReferenceArea=/(\\[^1-9]|\[(?:\\.|[^\]])*\])|\\([1-9](?:\d+)?)/g
+function OffsetBackReferences(str,offset) {
+	return str.replace(BackReference,function(match,pre,number) {
+		if(pre) {
+			return pre;
+		}
+		var newOffset=Number(number)+Number(offset);
+		//dont move into non-backreference number (less than 1 is invalid)
+		if(newOffset<=0) {
+			console.warn("Offset provided pushes a backreference below valid range");
+		}
+		return String(newOffset);
+	})
+}
+
+//turn a regexp into a string escaped form
 function RegexEscape(str) {
 	return String(str).replace(/\W/g,"\\$&");
 }
@@ -283,8 +348,20 @@ function RegexEscape(str) {
 //|3,avoid controls
 //|4,avoid character classes
 //|5,find a ( that does not capture
-var NotCapturingParen = /\\[^\(]|\\\(|[^\\\(\[]|\[(?:\\\]|\\[^\]]|[^\\])*\]|\((?:\?[\:\!\=])/g
+var NotACapturingParen = /\\[^\(]|\\\(|[^\\\(\[]|\[(?:\\\]|\\[^\]]|[^\\])*\]|\((?:\?[\:\!\=])/g;
 //assumes given a valid regex pattern
 function getCaptureCount(str) {
-	return str.replace(NotCapturingParen,"").length;
+	return str.replace(NotACapturingParen,"").length;
 }
+
+
+//Takes a regexp and returns a new cloned regexp, useful for the 'g' flag
+function RegExpClone(re) {
+	return RegExp(re.source
+		,re.global?"g":""
+		+re.multiline?"m":""
+		+re.ignoreCase?"i":""
+	)
+}
+
+})();

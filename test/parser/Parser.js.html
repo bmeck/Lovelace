@@ -55,6 +55,8 @@
 			console.log("Passed Parsing - failing string")
 			:console.error("Parse Failure!");
 
-		console.log(/[^^]a/.exec("a\na"),"1")
+		parser=RegexCombination(/^^start^line/)
+		parser.match("start\nline")
+		parser.match("notstart\nline")
 	})
 </script>
