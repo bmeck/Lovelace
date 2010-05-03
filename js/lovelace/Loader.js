@@ -202,8 +202,12 @@
 	    //}
 		//@return position in queue (1 indexed) or null if not allowed
 	    this.UnshiftEvent = function(evt) {
+		    var eventFilter;
 			for (var filter in eventHolds) {
-				if (eventHolds[filter] && !eventHolds[filter](evt)) return null;
+				if (eventFilter && !eventFilter(evt)) {
+				console.log("FAIL")
+					return null;
+				}
 			}
 	        eventQueue.unshift(evt);
 			//Log.log(evt,"added")
@@ -330,7 +334,7 @@
 						return "Log."+funcName+callStyle+"\""+uri.href+":\","+lineCount+",";
 					})
 					var scriptFunc=new Function("__File__","Log",script);
-					scriptFunc.call({},uri.href,Logger.MakeLog(uri.href))
+					scriptFunc.call({},uri.href,Logger.MakeLog(uri.href));
 					LoadedScripts[uri.href]=uri;
 					delete LoadingScripts[uri.href];
 					//no need to reset the currentdir, evals will do it as needed

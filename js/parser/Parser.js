@@ -1,3 +1,4 @@
+//TODO: add lexer callbacks based upon a regex to match
 (function(){
 //Whew constructor mayhem
 function global() {
@@ -18,7 +19,21 @@ RegexCombination=function(Regex_or_String) {
 		return Regex_or_String;
 	}
 	return new _RegexCombination(Regex_or_String);
-
+}
+RegexCombination.any=function() {
+	var rec=RegexCombination()
+	rec.any.apply(rec,arguments);
+	return rec;
+}
+RegexCombination.concat=function() {
+	var rec=RegexCombination()
+	rec.concat.apply(rec,arguments);
+	return rec;
+}
+RegexCombination.repetition=function() {
+	var rec=RegexCombination()
+	rec.repitition.apply(rec,arguments);
+	return rec;
 }
 
 
@@ -43,7 +58,7 @@ function _RegexCombination(Regex_or_String){
 	$this.id=id_next++;
 	$this.type = "Concat";//"Any"|"Concat"|"Repitition"
 	$this.callbacks = [];//On instance not related to nodes, done post
-	$this.cloning= false;
+	$this.cloning= true;
 	return $this;
 }
 
@@ -51,12 +66,16 @@ function _RegexCombination(Regex_or_String){
 //  Properties:
 //    deep -
 //    cloneRegExp -
-_RegexCombination.prototype.clone = function(deep,cloneRegExp) {
+_RegexCombination.prototype.clone = function(deep,cloneRegExp,overwritable) {
+	if (overwritable && ! overwritable instanceof _RegexCombination) {
+		throw "overwritable must be a regexcombination";
+	}
 	var $this=this;
-	var clone=new _RegexCombination();
+	var clone=overwritable||new _RegexCombination();
 	clone.type=$this.type;
 	clone.cloning=$this.cloning;
-	clone.callbacks=$this.callbacks;
+	//need to make a copy, otherwise... oddities
+	clone.callbacks=$this.callbacks.slice();
 	if(deep) {
 		var nodes=$this.nodes;
 		for(var i=0;i<$this.nodes.length;i++) {
@@ -77,6 +96,18 @@ _RegexCombination.prototype.clone = function(deep,cloneRegExp) {
 	}
 	return clone;
 }
+
+
+_RegexCombination.prototype.join = function(delimiter) {
+	var $this=this.cloning?this.clone():this;
+	var child=$this.clone();
+	$this.type="Concat";
+	$this.cloning=true;
+	$this.callbacks=[];
+	$this.nodes=[child,RegexCombination(delimiter,child).repitition()];
+	return $this;
+}
+
 
 //
 //	Returns a RegexCombination that has a type of Concat containing itself and the arguments,
@@ -158,22 +189,43 @@ _RegexCombination.prototype.any = function(/*args*/) {
 //  TODO: Implement in match!
 _RegexCombination.prototype.repetition = function(lower,upper) {
 	var $this=this;
-	$this.nodes=[];
-	if(this.nodes.length) {
+	if($this.nodes.length) {
 		var child=RegexCombination();
 		child.type=$this.type;
 		child.nodes=$this.nodes;
 		child.callbacks=$this.callbacks;
-		$this.nodes.push(child);
+		$this.nodes=[child];
+	}
+	else {
+		$this.nodes=[];
 	}
 
 	$this.type="Repetition";
-	$this.lower=Number(lower);
-	$this.upper=Number(upper);
+	$this.lower=Number(lower||0);
+	$this.upper=Number(upper||Infinity);
 	$this.callbacks=[];
 	return $this;
 }
 
+function handleCallback(rec) {
+	;
+}
+
+//
+//   if a callback returns anything except undefined it will replace it's parsetree with an array of all the returns
+//   the parse tree of a node is available to callbacks through the this object
+_RegexCombination.prototype.callback = function(callbackFunction,argumentMap) {
+	var $this=this;
+	$this.callbacks.push(callbackFunction);
+}
+
+//
+//  Creates a lexing callback, called before a RegexCombination node callback
+//  ie: repitition("\n").callback(x) lex("\n",line++) on "\n\n" will return a line 2 greater than before
+//
+_RegexCombination.prototype.lex = function(lexable,callback) {
+
+}
 
 //  Function: match
 //  Parameters:
@@ -183,47 +235,80 @@ _RegexCombination.prototype.match = function(str,depth) {
 	depth=depth||0;
 	viewing_str=str
 	var nodes=this.nodes;
-	var index=0;
-	var result=[];
-	result.source=this;
-	result.toString=function() {return this.join("");}
+
 	if(window.debug) console.group("Regex")
-	for (var i=0;i<nodes.length;i++) {
-		var part=nodes[i];
-		//works on both RegExp and _RegexCombination
-		var match=part instanceof _RegexCombination
-			?part.match(str.substr(index),depth+1)
-			:part.exec(viewing_str);
-		/*debug.start*/
-		if(window.debug) console.log(
-			"String:",viewing_str
-			,"Submatch:",match
-			,"This:",this
-			,"Node:",i,part
-		);
-		/*debug.end*/
-		switch(this.type) {
-			case "Concat":
-				if(match==null) {
+	var iteration=function(){
+		var index=0;
+		var result=[];
+		result.source=this;
+		result.toString=function() {return this.join("");}
+		for (var i=0;i<nodes.length;i++) {
+			var part=nodes[i];
+			//works on both RegExp and _RegexCombination
+			var match=part instanceof _RegexCombination
+				?part.match(str.substr(index),depth+1)
+				:part.exec(viewing_str);
+			/*debug.start*/
+			if(window.debug) console.log(
+				"String:",viewing_str
+				,"Submatch:",match
+				,"This:",this
+				,"Node:",i,part
+			);
+			/*debug.end*/
+			switch(this.type) {
+				case "Repetition":
+				case "Concat":
+					if(match==null) {
+						if(window.debug) console.groupEnd()
+						return null;
+					}
+					index+=match.toString().length
+					viewing_str=str.substr(index)
+					match.offset=index;
+					result.push(match);
+					break;
+				case "Any":
+					if(match==null) {
+						continue;
+					}
+					result.push(match);
 					if(window.debug) console.groupEnd()
-					return null;
-				}
-				index+=match.toString().length
-				viewing_str=str.substr(index)
-				match.offset=index;
-				result.push(match);
-				break;
-			case "Any":
-				if(match==null) {
-					continue;
-				}
-				result.push(match);
-				if(window.debug) console.groupEnd()
-				return result;
+					return result;
+			}
 		}
+		return result;
+	}
+	switch(this.type) {
+		case "Concat":
+		case "Any":
+			result=iteration();
+		case "Repetition":
+			var i=0;
+			var iterationResults=[]
+			while(i<this.upper) {
+				console.log(i,this)
+				result=iteration();
+				if(!result) {
+					if(i<this.lower||i>this.upper) {
+						result=null;
+					}
+					break;
+				}
+				str=str.substr(result.length)
+				iterationResults[iterationResults.length]=result;
+				i++;
+			}
+			if(!result && i<this.lower||i>this.upper) {
+				result=null;
+			}
+			else {
+				result=result.join("");
+			}
+			throw "up";
 	}
 	if(window.debug) console.groupEnd()
-	return this.type=="Concat"?result:null;
+	return typeof result !== "undefined"?result:null;
 }
 
 //  DANGEROUS BUT FASTER (except on very very complex very very large parsers (rather hard to achieve))
@@ -275,12 +360,12 @@ _RegexCombination.prototype._optimize = function(visited,depth) {
 //$1 char class internals
 //|5 escaped thing
 //|6 normal char
-//$2 charlass $3 chars in class
-var FlaggedChars=/(\\[bBcdDfnrsStvwW0]|\\x[a-fA-F0-9]|\\u[a-fA-F0-9]{4}|\\[^a-zA-Z])|(\[^?)(?:(\\.|[^\]]-\\?[^\\]|\\.|[^\]]))*\]|(\\?[a-zA-Z])/g
+//$2 charclass $3 chars in class
+var FlaggedChars=/(\\[bBcdDfnrsStvwW0]|\\x[a-fA-F0-9]|\\u[a-fA-F0-9]{4}|\\[^a-zA-Z])|(\[)(?:(\\.(?:-(?:\\.|[^\]]))?|[^\]](?:-(?:\\.|[^\]]))?))*\]|(\\?[a-zA-Z])/g
 //$1 char at range start
 //$2 char at range end
 //Matches since characters and character ranges!
-var CharRange=/(\\[^ux]|\\u[a-fA-F0-9]{4}|\\x[a-fA-F0--9]{2}|[^\\])(?:-(\\[^ux]|\\u[a-fA-F0-9]{4}|\\x[a-fA-F0--9]{2}|[^\\]))?/g
+var CharRange=/(\\[^ux]|\\u[a-fA-F0-9]{4}|\\x[a-fA-F0-9]{2}|[^\\])(?:-(\\[^ux]|\\u[a-fA-F0-9]{4}|\\x[a-fA-F0-9]{2}|[^\\]))?/g
 //Takes a regex and preserves functionality while making it fit the ignoreCase, and multiLine flags to match RegExp(...,"mg")
 function RegexNormalizeIgnoreCase(re) {
 	var patt=re.source;

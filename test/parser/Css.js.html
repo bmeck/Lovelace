@@ -1,0 +1,9 @@
+<script type="text/javascript" src="../../js/lovelace/Loader.js"></script>
+<script type="text/javascript">
+	Loader.Require("../../js/parser/CSS.js")
+	window.debug=true;
+	Loader.OnLoaded(function(){
+		console.log(css)
+		console.log(css.match("h1{font: 8em bold}"));
+	})
+</script>
