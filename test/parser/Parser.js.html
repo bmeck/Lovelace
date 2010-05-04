@@ -1,7 +1,23 @@
 <script type="text/javascript" src="../../js/lovelace/Loader.js"></script>
 <script type="text/javascript">
+	function runParsingTests(parser,testsFunction,noOptimize) {
+		console.group("Unoptimized:")
+		testsFunction(parser);
+		console.groupEnd();
+
+		if(!noOptimize) {
+			parser.optimize();
+			console.group("Optimized");
+			testsFunction(parser);
+			console.groupEnd();
+		}
+	}
 	Loader.Require("../../js/parser/Parser.js")
 	Loader.OnLoaded(function(){
+
+
+		console.group("Construction Testing:")
+
 		try{
 		var construct=new RegexCombination()
 			|| RegexCombination.call({})
@@ -19,44 +35,88 @@
 			console.log("Passed Casting - RegexCombination.")
 			:console.error("Cast duplication!");
 
-		//MATCH /a[bcd]/
-		var parser=RegexCombination("a").concat(
-			RegexCombination().any(/[bc]/,"d")
-		)
+		console.groupEnd();
 
-		var match=parser.match("ac")
-		match?
-			console.log("Passed Parsing - matching string")
-			:console.error("Parse Failure!");
-		console.log("Parser:",parser,"Matched: ",match,String(match))
-		parser.match("abcd")?
-			console.log("Passed Parsing - failing string")
-			:console.error("Parse Failure!");
+
+		var parser=RegexCombination("a").repetition(4,6);
+		console.group("Repetition Testing:");
+		var repetitionTests=function(parser) {
+			var txt="aaa";
+			match=parser.match(txt);
+			!match?
+				console.log("Passed Parsing - failing string - lower edge")
+				:console.error("Parse Failure!");
+			txt="aaaa";
+			match=parser.match(txt);
+			match?
+				console.log("Passed Parsing - matching string - lower edge")
+				:console.error("Parse Failure!");
+			txt="aaaaa";
+			match=parser.match(txt);
+			match?
+				console.log("Passed Parsing - matching string - internal")
+				:console.error("Parse Failure!");
+			txt="aaaaaa";
+			match=parser.match(txt);
+			match?
+				console.log("Passed Parsing - matching string - upper edge")
+				:console.error("Parse Failure!");
+			txt="aaaaaaa";
+			match=parser.match(txt);
+			!match?
+				console.log("Passed Parsing - failing string - upper edge")
+				:console.error("Parse Failure!");
+		}
+		runParsingTests(parser,repetitionTests)
+
+		console.groupEnd();
+
 
 		//MATCH Parentheses
 		//Involves recursion
+		console.group("Recursion Testing:")
 		var startParen=RegexCombination("(")
 		var closeParen=RegexCombination(")")
-		var parser=RegexCombination();
+		parser=RegexCombination();
 		parser=parser.concat(
 			startParen
 			,RegexCombination().any(parser,"")
 			,closeParen
-		).optimize();
-		console.log(parser)
-		var match=parser.match("(())")
-		console.log("Matched: ",match,String(match))
-		match?
-			console.log("Passed Parsing - matching string")
-			:console.error("Parse Failure!");
-		match=parser.match("(()");
-		console.log("Matched: ",{0:match},String(match))
-		!match?
-			console.log("Passed Parsing - failing string")
-			:console.error("Parse Failure!");
+		);
+		var recursionTests=function(parser) {
+			var match=parser.match("(())")
+			//console.log("Matched: ",match,String(match))
+			match?
+				console.log("Passed Parsing - matching string")
+				:console.error("Parse Failure!");
+			match=parser.match("(()");
+			//console.log("Matched: ",{0:match},String(match))
+			!match?
+				console.log("Passed Parsing - failing string")
+				:console.error("Parse Failure!");
+		}
+		runParsingTests(parser,recursionTests)
 
-		parser=RegexCombination(/^^start^line/)
-		parser.match("start\nline")
-		parser.match("notstart\nline")
+		console.groupEnd()
+
+
+		//MATCH /a[bcd]/
+		console.group("Simple Grammar:")
+		parser=RegexCombination("a").concat(
+			RegexCombination().any(/[bc]/,"d")
+		);
+		var grammarTests=function() {
+			var match=parser.match("ac");
+			match?
+				console.log("Passed Parsing - matching string")
+				:console.error("Parse Failure!");
+			//console.log("Parser:",parser,"Matched: ",match,String(match))
+			parser.match("abcd")?
+				console.log("Passed Parsing - failing string")
+				:console.error("Parse Failure!");
+		}
+		runParsingTests(parser,grammarTests)
+
+		console.groupEnd();
 	})
 </script>

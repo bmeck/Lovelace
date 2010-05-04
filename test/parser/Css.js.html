@@ -3,7 +3,6 @@
 	Loader.Require("../../js/parser/CSS.js")
 	window.debug=true;
 	Loader.OnLoaded(function(){
-		console.log(css)
-		console.log(css.match("h1{font: 8em bold}"));
+		console.log(JSON.stringify(css.match("h1 .span ~ * + p > a {font: 8em, ',test'}")));
 	})
 </script>

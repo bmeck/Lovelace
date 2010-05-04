@@ -1,7 +1,9 @@
 Loader.Require("Parser.js")
 Loader.OnLoaded(function(){
-var space=/\t\f\r\n[ ]/;
-var eatlineSpaceOnly=/\t\f[ ]/;
+var space=/[\t\f\r\n\ ]/;
+var spaces=/[\t\f\r\n\ ]+/
+var eatSpace=/[\t\f\r\n\ ]*/
+var eatlineSpaceOnly=/(?:\t\f[ ])*/;
 var eatline=/[^\n]*/;
 var identifier=/[0-9a-zA-Z_\-]+/
 css=RegexCombination();
@@ -21,18 +23,61 @@ var meta=RegexCombination.concat(
 	)
 );
 
-var descendantCombinator=RegexCombination(space).clone();
-var directChildCombinator=">";
-var nextSiblingCombinator="+";
-var followingSiblingCombinator="~";
+var directChildCombinator=RegexCombination.concat(eatSpace,">",eatSpace)/*.callback(function(result){
+	var str=result[1][0][0];
+	return {
+		combinator:str
+		,toString:function() {
+			return str
+		}
+	};
+});*/
+var nextSiblingCombinator=RegexCombination.concat(eatSpace,"+",eatSpace)/*.callback(function(result){
+	var str=result[1][0][0];
+	return {
+		combinator:str
+		,toString:function() {
+			return str
+		}
+	};
+});*/
+var followingSiblingCombinator=RegexCombination.concat(eatSpace,"~",eatSpace).callback(function(result,input){
+console.log(this,input,result)
+	var str=result[1][0][0];
+	return {
+		combinator:str
+		,lastIndex:str.length
+	};
+});
+var descendantCombinator=RegexCombination.concat(space,eatSpace)/*.callback(function(result,input){
+	var str=result[0][0][0];
+	return {
+		combinator:"\\s#"+str.length
+		,toString:function() {
+			return str
+		}
+	};
+});*/
 //var reverseCombinator="&";
 var combinator=RegexCombination.any(
-	descendantCombinator
-	,directChildCombinator
+	directChildCombinator
 	,nextSiblingCombinator
 	,followingSiblingCombinator
-);
-var tag=RegexCombination(identifier).clone();
+	,descendantCombinator
+).callback(function(result){
+	console.log(result)
+	return result;
+});
+var tag=RegexCombination.any(
+	"*"
+	,identifier
+).callback(function(result){
+	var str=result[0][0][0];
+	return {
+		tag:str
+		,lastIndex:str.length
+	};
+});
 var id=RegexCombination.concat(
 	"#"
 	,identifier
@@ -40,14 +85,20 @@ var id=RegexCombination.concat(
 var className=RegexCombination.concat(
 	"."
 	,identifier
-);
-var pseudoClass=RegexCombination(":"
+).callback(function(result) {
+	var str=result.toString();
+	return {
+		className:result[1][0][0]
+		,lastIndex:str.index
+	};
+});
+var pseudoClass=RegexCombination.concat(":"
 	,RegexCombination.any(
 		identifier
 		//,functionCall
 	)
 );
-var pseudoElement=RegexCombination("::"
+var pseudoElement=RegexCombination.concat("::"
 	,RegexCombination.any(
 		identifier
 		//,functionCall
@@ -61,14 +112,17 @@ var selector=RegexCombination.any(
 	,className
 	,pseudoClass
 	,pseudoElement
-).repetition();
+).repetition(1);
 var selectorList=RegexCombination.concat(
 	selector
 	,RegexCombination.concat(
 		","
 		,selector
 	).repetition()
-);
+).callback(function(result){
+	//console.log(result);
+	return result;
+});
 
 
 var arbitrary=RegexCombination(identifier).clone()
@@ -119,11 +173,14 @@ var value=RegexCombination.any(
 	,color
 );
 var valueList=RegexCombination.concat(
-	value
+	eatSpace
+	,value
 	,RegexCombination.concat(
-		RegexCombination.any(",",space)
+		RegexCombination(spaces).repetition(0,1)
+		,RegexCombination(",").repetition(0,1)
+		,eatSpace
 		,value
-	)
+	).repetition()
 )
 
 var modifierOperator="!";
@@ -133,11 +190,11 @@ var modifier=RegexCombination.concat(
 );
 
 var mappingOperator=":";
-var mapping=RegexCombination(
+var mapping=RegexCombination.concat(
 	identifier
 	,mappingOperator
 	,valueList
-	,modifier.repetition()
+	,modifier.clone().repetition()
 );
 var mappingList=RegexCombination.concat(
 	mapping
@@ -155,6 +212,9 @@ var block=RegexCombination.concat(
 var selectorBlock=RegexCombination.concat(selectorList,block);
 
 
-css.any(meta,selectorBlock).repetition()
-css.optimize();
+css.any(
+	//meta
+	/*,*/selectorBlock
+).repetition()//.optimize()
+console.log(css)
 });
