@@ -23,41 +23,34 @@ var meta=RegexCombination.concat(
 	)
 );
 
-var directChildCombinator=RegexCombination.concat(eatSpace,">",eatSpace)/*.callback(function(result){
-	var str=result[1][0][0];
-	return {
-		combinator:str
-		,toString:function() {
-			return str
-		}
-	};
-});*/
-var nextSiblingCombinator=RegexCombination.concat(eatSpace,"+",eatSpace)/*.callback(function(result){
-	var str=result[1][0][0];
-	return {
-		combinator:str
-		,toString:function() {
-			return str
-		}
-	};
-});*/
-var followingSiblingCombinator=RegexCombination.concat(eatSpace,"~",eatSpace).callback(function(result,input){
-console.log(this,input,result)
+var directChildCombinator=RegexCombination.concat(eatSpace,">",eatSpace).callback(function(result){
 	var str=result[1][0][0];
 	return {
 		combinator:str
 		,lastIndex:str.length
 	};
 });
-var descendantCombinator=RegexCombination.concat(space,eatSpace)/*.callback(function(result,input){
+var nextSiblingCombinator=RegexCombination.concat(eatSpace,"+",eatSpace).callback(function(result){
+	var str=result[1][0][0];
+	return {
+		combinator:str
+		,lastIndex:str.length
+	};
+});
+var followingSiblingCombinator=RegexCombination.concat(eatSpace,"~",eatSpace).callback(function(result,input){
+	var str=result[1][0][0];
+	return {
+		combinator:str
+		,lastIndex:str.length
+	};
+});
+var descendantCombinator=RegexCombination.concat(space,eatSpace).callback(function(result,input){
 	var str=result[0][0][0];
 	return {
-		combinator:"\\s#"+str.length
-		,toString:function() {
-			return str
-		}
+		combinator:str
+		,lastIndex:str.length
 	};
-});*/
+});
 //var reverseCombinator="&";
 var combinator=RegexCombination.any(
 	directChildCombinator
@@ -86,10 +79,10 @@ var className=RegexCombination.concat(
 	"."
 	,identifier
 ).callback(function(result) {
-	var str=result.toString();
+	var str=result[1][0][0];
 	return {
-		className:result[1][0][0]
-		,lastIndex:str.index
+		className:str
+		,lastIndex:str.length+1
 	};
 });
 var pseudoClass=RegexCombination.concat(":"

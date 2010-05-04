@@ -236,7 +236,7 @@ _RegexCombination.prototype.lex = function(lexable,callback) {
 _RegexCombination.prototype.match = function(str,depth) {
 	var $this=this;
 	depth=depth||0;
-	viewing_str=str
+	var viewing_str=str
 	var nodes=$this.nodes;
 	var loops=1;
 	var index=0;
@@ -262,11 +262,14 @@ _RegexCombination.prototype.match = function(str,depth) {
 			var part=nodes[i];
 			//works on both RegExp and _RegexCombination
 			var match;
+			console.warn("checking",viewing_str,index)
 			if(part instanceof _RegexCombination) {
 				match=part.match(viewing_str,depth+1)
 			}
 			else {
+				part.lastIndex=0
 				match=part.exec(viewing_str);
+				console.log(match,"REGEX MATCH",[viewing_str,part])
 				if(match) match.lastIndex=match[0].length
 			}
 			if(match)console.log(match.lastIndex)
@@ -274,7 +277,7 @@ _RegexCombination.prototype.match = function(str,depth) {
 			if(window.debug) console.log(
 				"String:",viewing_str
 				,"Submatch:",match
-				,"This:",$this
+				//,"This:",$this
 				,"Node:",i,part
 			);
 			/*debug.end*/
