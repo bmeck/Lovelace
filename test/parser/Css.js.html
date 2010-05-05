@@ -1,8 +1,8 @@
 <script type="text/javascript" src="../../js/lovelace/Loader.js"></script>
 <script type="text/javascript">
 	Loader.Require("../../js/parser/CSS.js")
-	window.debug=true;
+	//window.debug=true;
 	Loader.OnLoaded(function(){
-		console.log(JSON.stringify(css.match("h1 .span ~ * + p > a {font: 8em, ',test'}")));
+		console.log(JSON.stringify(css.match("h1 .span ~ * + p > a {\nfont: 8em , ',test' !important \n}")));
 	})
 </script>

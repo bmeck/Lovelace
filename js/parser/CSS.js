@@ -58,7 +58,7 @@ var combinator=RegexCombination.any(
 	,followingSiblingCombinator
 	,descendantCombinator
 ).callback(function(result){
-	console.log(result)
+	//console.log(result)
 	return result;
 });
 var tag=RegexCombination.any(
@@ -109,7 +109,9 @@ var selector=RegexCombination.any(
 var selectorList=RegexCombination.concat(
 	selector
 	,RegexCombination.concat(
-		","
+		eatSpace
+		,","
+		,eatSpace
 		,selector
 	).repetition()
 ).callback(function(result){
@@ -137,20 +139,28 @@ var string=/'(?:\\.|[^'])*'|"(?:\\.|[^"])*"/
 var hexColor=/[#]\d{3}(?:\d{3})?/
 var rgbColor=RegexCombination.concat(
 	"rgb("
+	,eatSpace
 	,number
 	,RegexCombination.concat(
-		","
+		eatSpace
+		,","
+		,eatSpace
 		,number
 	).repetition(2)
+	,eatSpace
 	,")"
 )
 var rgbaColor=RegexCombination.concat(
 	"rgba("
+	,eatSpace
 	,number
 	,RegexCombination.concat(
-		","
+		eatSpace
+		,","
+		,eatSpace
 		,number
 	).repetition(3)
+	,eatSpace
 	,")"
 )
 var color=RegexCombination.any(
@@ -166,8 +176,7 @@ var value=RegexCombination.any(
 	,color
 );
 var valueList=RegexCombination.concat(
-	eatSpace
-	,value
+	value
 	,RegexCombination.concat(
 		RegexCombination(spaces).repetition(0,1)
 		,RegexCombination(",").repetition(0,1)
@@ -181,33 +190,48 @@ var modifier=RegexCombination.concat(
 	modifierOperator
 	,identifier
 );
+var modifierList=RegexCombination.concat(
+	modifier
+	,RegexCombination.concat(
+		RegexCombination(spaces)
+		,modifier
+	).repetition()
+)
 
 var mappingOperator=":";
 var mapping=RegexCombination.concat(
-	identifier
+	eatSpace
+	,identifier
+	,eatSpace
 	,mappingOperator
+	,eatSpace
 	,valueList
-	,modifier.clone().repetition()
+	,eatSpace
+	,modifierList
 );
 var mappingList=RegexCombination.concat(
 	mapping
 	,RegexCombination.concat(
-		";"
+		eatSpace
+		,";"
+		,eatSpace
 		,mapping
 	).repetition()
 );
 
 var block=RegexCombination.concat(
 	"{"
+	,eatSpace
 	,mappingList
+	,eatSpace
 	,"}"
 );
 var selectorBlock=RegexCombination.concat(selectorList,block);
 
 
 css.any(
-	//meta
-	/*,*/selectorBlock
+	meta
+	,selectorBlock
 ).repetition()//.optimize()
 console.log(css)
 });

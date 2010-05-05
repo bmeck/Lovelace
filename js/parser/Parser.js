@@ -46,7 +46,7 @@ function _RegexCombination(Regex_or_String){
 	var $this=this;
 	if(Regex_or_String) {
 		if (Regex_or_String instanceof RegExp) {
-			var dup=RegExp("^"+Regex_or_String.source,RegExpFlags(Regex_or_String)+"g")
+			var dup=RegExp("^"+Regex_or_String.source,/*RegExpFlags(Regex_or_String)+*/"g")
 			$this.nodes=[dup];
 		}
 		else {
@@ -262,17 +262,17 @@ _RegexCombination.prototype.match = function(str,depth) {
 			var part=nodes[i];
 			//works on both RegExp and _RegexCombination
 			var match;
-			console.warn("checking",viewing_str,index)
+			//console.warn("checking",viewing_str,index)
 			if(part instanceof _RegexCombination) {
 				match=part.match(viewing_str,depth+1)
 			}
 			else {
 				part.lastIndex=0
 				match=part.exec(viewing_str);
-				console.log(match,"REGEX MATCH",[viewing_str,part])
+				//console.log(match,"REGEX MATCH",[viewing_str,part])
 				if(match) match.lastIndex=match[0].length
 			}
-			if(match)console.log(match.lastIndex)
+			//if(match)console.log(match.lastIndex)
 			/*debug.start*/
 			if(window.debug) console.log(
 				"String:",viewing_str
