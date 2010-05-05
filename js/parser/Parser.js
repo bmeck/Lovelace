@@ -59,6 +59,7 @@ function _RegexCombination(Regex_or_String){
 	$this.id=id_next++;
 	$this.type = "Concat";//"Any"|"Concat"|"Repitition"
 	$this.callbacks = [];//On instance not related to nodes, done post
+	$this.pure_callbacks = [];
 	$this.cloning= true;
 	return $this;
 }
@@ -222,10 +223,9 @@ _RegexCombination.prototype.callback = function(callbackFunction,argumentMap) {
 }
 
 //
-//  Creates a lexing callback, called before a RegexCombination node callback
-//  ie: repitition("\n").callback(x) lex("\n",line++) on "\n\n" will return a line 2 greater than before
+//  Adds a callback who does not have side effects on the parse (its return value is ignored)
 //
-_RegexCombination.prototype.lex = function(lexable,callback) {
+_RegexCombination.prototype.pureCallback = function(callback) {
 
 }
 
@@ -394,6 +394,9 @@ _RegexCombination.prototype.optimize = function() {
 //
 //  The recursive helper function for optimize
 //  depth is  used for debugging right now, but can be used later for depth limiting?
+//  TODO: Optimize down to callback depth of 1
+//    , combine RegExps without callbacks
+//    ,  combine RegExps w/ pureCallbacks by grouping
 //
 _RegexCombination.prototype._optimize = function(visited,depth) {
 	visited=visited||[]

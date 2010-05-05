@@ -1,0 +1,55 @@
+<script type="text/javascript">
+function test(testsFunction,count) {
+	var date_start=new Date,date_end=new Date;
+	date_start=new Date;
+	for(var i=0;i<count;i++) {
+		testsFunction();
+	}
+	date_end=new Date;
+	console.log("time:",date_end-date_start)
+}
+
+var count=50000
+String.prototype.repeat=function(count) {
+	var builder=[]
+	for(var i=0;i<count;i++) {
+		builder.push(this);
+	}
+	return builder.join("")
+}
+var re=RegExp("^"+"()".repeat(100)+"$")
+test(function(){
+	return re.exec("")
+},count)
+test(function(){
+	return re.test("")
+},count)
+test(function(){
+	var arr=[]
+	for(var i=0;i<50;i++) {
+		arr.push("".indexOf(""));
+	}
+	return arr;
+},count)
+var search_re=RegExp("")
+test(function(){
+	var arr=[]
+	for(var i=0;i<10;i++) {
+		arr.push("".search(search_re));
+	}
+	return arr;
+},count)
+test(function(){
+	var arr=[]
+	for(var i=0;i<100;i++) {
+		arr.push("".substr(0));
+	}
+	return arr;
+},count)
+test(function(){
+	var arr=[]
+	for(var i=0;i<100;i++) {
+	}
+	return arr;
+},count)
+</script>
